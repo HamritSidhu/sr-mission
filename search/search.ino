@@ -1,7 +1,7 @@
 #include <NewPing.h>
 
-NewPing sideSonar(10, 2, 10);
-NewPing frontSonar(5, 6, 3500);
+NewPing sideSonar(10, 2, 40);
+NewPing frontSonar(5, 6, 40);
 
 // Motor A - right motor
 // Motor B - left motor
@@ -32,26 +32,22 @@ void setup() {
 }
 
 void loop(){
-    //read front
-    //once ground is reached, move straight
     if (!doneAlignment && !turned) {
-        doneAlignment = destinationDetected();  
+        doneAlignment = sideDetects();  
     }
     
     if (doneAlignment && !turned) {
         stopMotors();
         turnLeft();
-        delay(1000); 
+        while (!frontDetects()) {
+            delay(1); 
+        }
         stopMotors();
         delay(1000);
         turned = true;  
     }
     drive();
     delay(1000);
-    //read side, once destination detected stop motors
-    //turn right
-    //move straight
-    //once destination is reached, stop motors
 }
 
 bool destinationReached() {
@@ -59,9 +55,14 @@ bool destinationReached() {
     return distF < 8 && distF > 3000;
 }
 
-bool destinationDetected() {
+bool sideDetects() {
     distS = sideSonar.ping_cm();
     return distS != 0;
+}
+
+bool frontDetects() {
+    distF = frontSonar.ping_cm();
+    return distF != 0;  
 }
 
 void stopMotors(){
@@ -77,7 +78,7 @@ void moveRMtr(bool forward){
     digitalWrite(motorADir, LOW);  
   }
   digitalWrite(brakePinA, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorAVal, 250);    //Spins the motor on Channel A at half speed
+  analogWrite(motorAVal, 100);    //Spins the motor on Channel A at half speed
 }
 
 void moveLMtr(bool forward){
@@ -88,7 +89,7 @@ void moveLMtr(bool forward){
     digitalWrite(motorBDir, LOW);  
   }
   digitalWrite(brakePinB, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorBVal, 250);    //Spins the motor on Channel A at half speed
+  analogWrite(motorBVal, 100);    //Spins the motor on Channel A at half speed
 }
 
 void drive() {
