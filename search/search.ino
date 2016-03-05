@@ -1,10 +1,11 @@
 #include <NewPing.h>
 
-NewPing sideSonar(10, 2, 100);
+NewPing sideSonar(10, 2, 10);
 NewPing frontSonar(5, 6, 3500);
 
 // Motor A - right motor
 // Motor B - left motor
+// Initialixing motor pins
 const int brakePinA = 9;
 const int brakePinB = 8;
 const int motorADir = 12;
@@ -13,9 +14,10 @@ const int motorAVal = 3;
 const int motorBVal = 11;
 
 // defines variables
-long durF, durS;
+long durF, durS; 
 long distF, distS;
-bool checkSide = false;
+bool doneAlignment = false;
+bool turned = false;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -32,6 +34,20 @@ void setup() {
 void loop(){
     //read front
     //once ground is reached, move straight
+    if (!doneAlignment && !turned) {
+        doneAlignment = destinationDetected();  
+    }
+    
+    if (doneAlignment && !turned) {
+        stopMotors();
+        turnLeft();
+        delay(1000); 
+        stopMotors();
+        delay(1000);
+        turned = true;  
+    }
+    drive();
+    delay(1000);
     //read side, once destination detected stop motors
     //turn right
     //move straight
@@ -48,7 +64,7 @@ bool destinationDetected() {
     return distS != 0;
 }
 
-void stopMotor(){
+void stopMotors(){
   digitalWrite(brakePinA, HIGH);
   digitalWrite(brakePinB, HIGH);  
 }
