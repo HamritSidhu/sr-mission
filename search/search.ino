@@ -1,5 +1,6 @@
 #include <NewPing.h>
 
+//The third argument is the distance range within which the sensor reads
 NewPing sideSonar(10, 2, 40);
 NewPing frontSonar(5, 6, 40);
 
@@ -14,10 +15,12 @@ const int motorAVal = 3;
 const int motorBVal = 11;
 
 // defines variables
-long durF, durS; 
 long distF, distS;
+int vel = 100; // set the speed here
+bool onGround = false;
 bool doneAlignment = false;
 bool turned = false;
+bool atDestination = false;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -31,7 +34,16 @@ void setup() {
   pinMode(brakePinB, OUTPUT);  //Initiates Brake Channel A pin 
 }
 
-void loop(){
+void loop() {
+    //if (onGround) {
+        search();
+    //}
+    //else {
+    //    checkForGround();
+    //}
+}
+
+void search() {
     if (!doneAlignment && !turned) {
         doneAlignment = sideDetects();  
     }
@@ -46,13 +58,35 @@ void loop(){
         delay(1000);
         turned = true;  
     }
+
+//    keep checking if destination is reached or not
+//    if (turned && !atDestination) {
+//        checkForDestination();  
+//    }
+//    
+//    Once destination is reached, stop robot from moving
+//    if (atDestination) {
+//        stopMotors();
+//        delay(1000)
+//        while (1) { }
+//    }
+      
     drive();
     delay(1000);
 }
 
-bool destinationReached() {
+void checkForGround() {
+    onGround = targetReached();  
+}
+
+void checkForDestination() {
+    atDestination = targetReached();  
+}
+
+bool targetReached() {
+    //need to adjust this function so it returns true when we hit something
     distF = frontSonar.ping_cm();
-    return distF < 8 && distF > 3000;
+    return distF == 0;
 }
 
 bool sideDetects() {
@@ -78,7 +112,7 @@ void moveRMtr(bool forward){
     digitalWrite(motorADir, LOW);  
   }
   digitalWrite(brakePinA, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorAVal, 100);    //Spins the motor on Channel A at half speed
+  analogWrite(motorAVal, vel);    //Spins the motor on Channel A at half speed
 }
 
 void moveLMtr(bool forward){
@@ -89,7 +123,7 @@ void moveLMtr(bool forward){
     digitalWrite(motorBDir, LOW);  
   }
   digitalWrite(brakePinB, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorBVal, 100);    //Spins the motor on Channel A at half speed
+  analogWrite(motorBVal, vel);    //Spins the motor on Channel A at half speed
 }
 
 void drive() {
