@@ -32,7 +32,7 @@ void setup() {
   pinMode(buttonPin2, INPUT);
 
   armServo.attach(7);  // attaches the servo on pin 9 to the servo object
-  armServo.write(135); // Set arm to 180 position
+  armServo.write(180); // Set arm to 180 position, 135
   pulleyServo.attach(10);  // attaches the servo on pin 13 to a servo object
   pulleyServo.write(100); // Stop pulley motor
 
@@ -93,13 +93,24 @@ void drive() {
 }
 
 void arm() {
-  armServo.write(40);
-  delay(500);
-  armServo.write(20);
+//  armServo.write(40);
+//  delay(500);
+  armServo.write(5); 
   doneArm = true;
 }
 
-void pulley() {   
+void pulley() {
+  delay(1000);
+  digitalWrite(12, HIGH);  //Establishes forward direction of Channel A
+  digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+  analogWrite(11, 60);
+  digitalWrite(13, HIGH); //Establishes forward direction of Channel B
+  digitalWrite(8, LOW);   //Disengage the Brake for Channel B
+  analogWrite(3, 60);
+  delay(1000);
+  digitalWrite(8, HIGH);
+  digitalWrite(9, HIGH);
+  delay(3000);   
   pulleyServo.write(45); 
   delay(7000);
   pulleyServo.write(100);
