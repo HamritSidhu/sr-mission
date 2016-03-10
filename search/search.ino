@@ -1,8 +1,8 @@
 #include <NewPing.h>
 
 //The third argument is the distance range within which the sensor reads
-NewPing sideSonar(10, 2, 40);
-NewPing frontSonar(5, 6, 40);
+NewPing sideSonar(10, 2, 140);
+NewPing frontSonar(5, 6, 100);
 
 // Motor A - right motor
 // Motor B - left motor
@@ -16,10 +16,13 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-int vel = 100; // set the speed here
+//int margin = 0;
+int vel = 175; // set the speed here
+int distToBase = 0;
 bool onGround = false;
 bool doneAlignment = false;
 bool turned = false;
+bool done = false;
 bool atDestination = false;
 
 void setup() {
@@ -35,29 +38,100 @@ void setup() {
 }
 
 void loop() {
-    //if (onGround) {
+    if (onGround) {
+        Serial.println("Starting search");
         search();
-    //}
-    //else {
-    //    checkForGround();
-    //}
+    }
+    else {
+        checkForGround();
+    }
+}
+
+
+void checkForGround() {
+   //   Serial.println(frontSonar.ping_cm());
+    //delay(1000);
+    while (frontSonar.ping_cm() >= 20 || frontSonar.ping_cm() == 0) { 
+          Serial.println("Sensor reading greater than 20");
+      }
+    
+    while (frontSonar.ping_cm() <= 20){
+      vel = 150 ;
+      // Serial.println(frontSonar.ping_cm());
+      drive();
+      Serial.println("Sensor reading less than 20");
+    }
+
+    Serial.println(frontSonar.ping_cm());
+    
+    stopMotors();
+    if (frontSonar.ping_cm() >= 10 || frontSonar.ping_cm() == 0) {
+      
+      Serial.println("on ground!!!");
+      
+      delay(1000);
+      onGround = true;
+    }
+    
+    //delay(10);
+    //onGround = targetReached();  
 }
 
 void search() {
     if (!doneAlignment && !turned) {
-        doneAlignment = sideDetects();  
-    }
-    
-    if (doneAlignment && !turned) {
-        stopMotors();
-        turnLeft();
-        while (!frontDetects()) {
-            delay(1); 
+        if(sideDetects()){
+          doneAlignment = true;
+          distToBase = distS;
+          //Serial.println("Aligned");
+         // Serial.println("Side Distance:");
+          //Serial.println(distToBase);
         }
+    }
+    if (!doneAlignment && !turned){
+        drive();  
+    }
+    if(doneAlignment && !turned){
         stopMotors();
         delay(1000);
-        turned = true;  
+        turnLeft();
+        delay(200);
+        while(!frontDetects()){
+          turnLeft(); 
+          delay(10);
+          //Serial.println("Front Distance:");
+          //Serial.println(frontSonar.ping_cm());
+        }
+        //Serial.println("out of loop");
+        //Serial.println("Front Distance");
+        //Serial.println(frontSonar.ping_cm());
+        turned = true;
+        stopMotors();
+        delay(1000);
     }
+    if(turned && !done){
+      vel = 250;
+      while(frontSonar.ping_cm() > 4){
+        drive();  
+      }
+      if(frontSonar.ping_cm() <= 4){
+          done = true;
+      }
+    }
+    if(done){
+      stopMotors();
+      delay(5000);  
+    }
+//    
+//    if (doneAlignment && !turned) {
+//        stopMotors();
+//        turnLeft();
+//        while (!frontDetects()) {
+//            delay(1); 
+//        }
+//        stopMotors();
+//        delay(1000);
+//        turned = true;  
+//    }
 
 //    keep checking if destination is reached or not
 //    if (turned && !atDestination) {
@@ -71,12 +145,7 @@ void search() {
 //        while (1) { }
 //    }
       
-    drive();
-    delay(1000);
-}
-
-void checkForGround() {
-    onGround = targetReached();  
+    //delay(1000);
 }
 
 void checkForDestination() {
@@ -95,8 +164,7 @@ bool sideDetects() {
 }
 
 bool frontDetects() {
-    distF = frontSonar.ping_cm();
-    return distF != 0;  
+    return frontSonar.ping_cm() <= distToBase && frontSonar.ping_cm() != 0; 
 }
 
 void stopMotors(){
@@ -147,4 +215,5 @@ void turnRight() {
   //Left motor moves forward
   moveLMtr(true);
 }
+
 
