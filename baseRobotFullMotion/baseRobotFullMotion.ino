@@ -75,7 +75,7 @@ void drive() {
     //Motor A forward @ full speed
     digitalWrite(12, HIGH);  //Establishes forward direction of Channel A
     digitalWrite(9, LOW);   //Disengage the Brake for Channel A
-    analogWrite(3, 85);    //Spins the motor on Channel A at half speed
+    analogWrite(3, 100);    //Spins the motor on Channel A at half speed
   }
   else
     digitalWrite(9, HIGH);  //Engage the Brake for Channel A
@@ -86,7 +86,7 @@ void drive() {
     //Motor B forward @ full speed
     digitalWrite(13, HIGH); //Establishes forward direction of Channel B
     digitalWrite(8, LOW);   //Disengage the Brake for Channel B
-    analogWrite(11, 85);   //Spins the motor on Channel B at half speed
+    analogWrite(11, 100);   //Spins the motor on Channel B at half speed
   }
   else
     digitalWrite(8, HIGH);  //Engage the Brake for Channel B
@@ -111,8 +111,8 @@ void pulley() {
   digitalWrite(8, HIGH);
   digitalWrite(9, HIGH);
   delay(3000);   
-  pulleyServo.write(45); 
-  delay(7000);
+  pulleyServo.write(20); 
+  delay(12000);
   pulleyServo.write(100);
   donePulley = true; 
 }
