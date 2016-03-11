@@ -19,8 +19,8 @@ long distF, distS;
 //int margin = 0;
 int vel = 175; // set the speed here
 int distToBase = 0;
-bool onGround = false;
-bool start = true;
+bool onGround = false; 
+bool start = false;
 bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
