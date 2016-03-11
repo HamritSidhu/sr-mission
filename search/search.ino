@@ -20,7 +20,7 @@ long distF, distS;
 int vel = 175; // set the speed here
 int distToBase = 0;
 bool onGround = false; 
-bool start = false;
+bool start = true;
 bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
@@ -41,11 +41,10 @@ void setup() {
 void loop() {
      // Wait for robot drop
     if(!start){
-      delay(13000);
+      delay(10000);
       start = true;
     }
     if(onGround) {
-        Serial.println("Starting search");
         stopMotors();
         search();
     }
@@ -56,15 +55,16 @@ void loop() {
 
 void checkForGround() {
     if(start && !doneDrop){
-      while (frontSonar.ping_cm() >= 20 || frontSonar.ping_cm() == 0) { }
-      while(frontSonar.ping_cm() <= 20){
-        drive();
+      while (getAverageReadingF() >= 20 || getAverageReadingF() == 0) { }
+      while(getAverageReadingF() <= 30){
+          drive();
+          delay(10);
       }  
       doneDrop = true;
     }
     if(start && doneDrop){
-      //reverse if robot goes too far
-      while(frontSonar.ping_cm() <= 150 || frontSonar.ping_cm() == 0){
+      //reverse if robot goes too far 
+      while(getAverageReadingF() <= 150 || getAverageReadingF() == 0){
         vel = 100;
         reverse();
       } 
@@ -72,6 +72,16 @@ void checkForGround() {
       delay(1000);
       onGround = true;
    }
+}
+
+
+double getAverageReadingF() {
+    double total = 0;
+
+    for (int i=0; i<5; i++) {
+        total +=  frontSonar.ping_cm();
+    }
+    return total/5;
 }
 
 void search() {
