@@ -3,20 +3,21 @@
 Servo armServo;  
 Servo pulleyServo; 
 
-int pos = armServo.read();    // variable to store the servo position
-
 //button variables
 const int buttonPin1 = 2;     // the number of the pushbutton pin
 const int buttonPin2 = 4;     // the number of the pushbutton pin
+const int buttonStart = 5;    // Start Program Pin
 
-// variables will change:
-int buttonState1 = 0;         // variable for reading the pushbutton status
-int buttonState2 = 0;         // variable for reading the pushbutton status
-
+// Flags
 bool startDrive = false;
 bool donePulley = false;
 bool doneArm = false;
 bool doneDrive = false;
+bool driving = false;
+
+// Speed
+int motorSpeed = 100;
+int pulleySpeed = 20;
 
 void setup() {
    //Setup Channel A motor
@@ -30,11 +31,12 @@ void setup() {
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
+  pinMode(buttonStart,  INPUT);
 
   armServo.attach(7);  // attaches the servo on pin 9 to the servo object
-  armServo.write(180); // Set arm to 180 position, 135
+  armServo.write(180); // Set arm to 180 position,
   pulleyServo.attach(10);  // attaches the servo on pin 13 to a servo object
-  pulleyServo.write(100); // Stop pulley motor
+  pulleyServo.write(105); // Stop pulley motor
 
 }
 
@@ -50,69 +52,80 @@ void loop(){
 }
 
 void waitForStart() {
-  int state = digitalRead(buttonPin2);
-  if (state == HIGH)
+  int state = digitalRead(buttonStart);
+  if (state == HIGH) {
     startDrive = true;
+    doneDrive = true;
+  }
+}
+
+void driveChannelA() {
+  //Motor A forward @ full speed
+  digitalWrite(12, HIGH);  //Establishes forward direction of Channel A
+  digitalWrite(9, LOW);   //Disengage the Brake for Channel A
+  analogWrite(3, motorSpeed);
+}
+
+void stopChannelA() {
+  digitalWrite(9, HIGH);  //Engage the Brake for Channel A
+}
+
+void driveChannelB() {
+  //Motor B forward @ full speed
+  digitalWrite(13, HIGH); //Establishes forward direction of Channel B
+  digitalWrite(8, LOW);   //Disengage the Brake for Channel B
+  analogWrite(11, motorSpeed);   //Spins the motor on Channel B at half speed
+}
+
+void stopChannelB() {
+  digitalWrite(8, HIGH);  //Engage the Brake for Channel B
+}
+
+void driveBoth() {
+  if (!driving) {
+    driveChannelA();
+    driveChannelB();
+  }
+  driving = true;
+}
+
+void stopBoth() {
+  if (driving) {
+    stopChannelA();
+    stopChannelB();
+  }
+  driving = false;
 }
 
 void drive() {
-  // read the state of the pushbutton value:
-  buttonState1 = digitalRead(buttonPin1);
-  buttonState2 = digitalRead(buttonPin2);
-
-  //We at the wall
-  if (buttonState1 == HIGH && buttonState2 == HIGH)
+  int state1 = digitalRead(buttonPin1);
+  int state2 = digitalRead(buttonPin2);
+  // Reached the wall
+  if (digitalRead(buttonPin1) == HIGH || digitalRead(buttonPin2) == HIGH && driving)
   {
-    digitalWrite(9, HIGH);  //Engage the Brake for Channel A
-    digitalWrite(8, HIGH);  //Engage the Brake for Channel B
+    stopBoth();
     doneDrive = true;
     delay(2000);
   }
-
-  //Motor A
-  if (buttonState1 == LOW) 
-  {
-    //Motor A forward @ full speed
-    digitalWrite(12, HIGH);  //Establishes forward direction of Channel A
-    digitalWrite(9, LOW);   //Disengage the Brake for Channel A
-    analogWrite(3, 100);    //Spins the motor on Channel A at half speed
-  }
   else
-    digitalWrite(9, HIGH);  //Engage the Brake for Channel A
-
-  //Motor B
-  if (buttonState2 == LOW) 
-  {
-    //Motor B forward @ full speed
-    digitalWrite(13, HIGH); //Establishes forward direction of Channel B
-    digitalWrite(8, LOW);   //Disengage the Brake for Channel B
-    analogWrite(11, 100);   //Spins the motor on Channel B at half speed
-  }
-  else
-    digitalWrite(8, HIGH);  //Engage the Brake for Channel B
+    driveBoth();
 }
 
 void arm() {
-//  armServo.write(40);
-//  delay(500);
   armServo.write(5); 
   doneArm = true;
 }
 
 void pulley() {
   delay(1000);
-  digitalWrite(12, HIGH);  //Establishes forward direction of Channel A
-  digitalWrite(9, LOW);   //Disengage the Brake for Channel A
-  analogWrite(11, 60);
-  digitalWrite(13, HIGH); //Establishes forward direction of Channel B
-  digitalWrite(8, LOW);   //Disengage the Brake for Channel B
-  analogWrite(3, 60);
+  driveBoth();
   delay(1000);
-  digitalWrite(8, HIGH);
-  digitalWrite(9, HIGH);
+  stopBoth();
   delay(3000);   
-  pulleyServo.write(20); 
-  delay(12000);
+  pulleyServo.write(pulleySpeed); 
+  delay(2000);
+  armServo.write(10);
+  delay(9000);
   pulleyServo.write(100);
   donePulley = true; 
 }
