@@ -2,7 +2,7 @@
 
 //The third argument is the distance range within which the sensor reads
 NewPing sideSonar(10, 2, 140);
-NewPing frontSonar(5, 6, 100);
+NewPing frontSonar(5, 6, 200);
 
 // Motor A - right motor
 // Motor B - left motor
@@ -20,12 +20,11 @@ long distF, distS;
 int vel = 175; // set the speed here
 int distToBase = 0;
 bool onGround = false;
-bool start = false;
+bool start = true;
 bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
-bool atDestination = false;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -47,6 +46,7 @@ void loop() {
     }
     if(onGround) {
         Serial.println("Starting search");
+        stopMotors();
         search();
     }
     else {
@@ -56,27 +56,26 @@ void loop() {
 
 void checkForGround() {
     if(start && !doneDrop){
-      while (frontSonar.ping_cm() >= 20 || frontSonar.ping_cm() == 0) { 
-          Serial.println("Sensor reading greater than 20");
-      }
-      while(frontSonar.ping_cm() <= 20 && frontSonar.ping_cm() > 4){
+      while (frontSonar.ping_cm() >= 20 || frontSonar.ping_cm() == 0) { }
+      while(frontSonar.ping_cm() <= 20){
         drive();
       }  
       doneDrop = true;
     }
     if(start && doneDrop){
-      //keep driving until the robot is oriented forward
-      while(frontSonar.ping_cm() <= 4){
-        drive();
+      //reverse if robot goes too far
+      while(frontSonar.ping_cm() <= 150 || frontSonar.ping_cm() == 0){
+        vel = 100;
+        reverse();
       } 
       stopMotors();
       delay(1000);
       onGround = true;
-    }
+   }
 }
 
-
 void search() {
+    vel = 200;
     if (!doneAlignment && !turned) {
         if(sideDetects()){
           doneAlignment = true;
@@ -113,12 +112,6 @@ void search() {
       delay(5000);  
     }
 }
-
-//bool targetReached() {
-//    //need to adjust this function so it returns true when we hit something
-//    distF = frontSonar.ping_cm();
-//    return distF == 0;
-//}
 
 bool sideDetects() {
     distS = sideSonar.ping_cm();
@@ -178,4 +171,8 @@ void turnRight() {
   moveLMtr(true);
 }
 
+void reverse() {
+  moveRMtr(false);
+  moveLMtr(false); 
+}
 
