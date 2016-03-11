@@ -55,7 +55,6 @@ void loop() {
 }
 
 void checkForGround() {
-
     if(start && !doneDrop){
       while (frontSonar.ping_cm() >= 20 || frontSonar.ping_cm() == 0) { 
           Serial.println("Sensor reading greater than 20");
@@ -66,9 +65,10 @@ void checkForGround() {
       doneDrop = true;
     }
     if(start && doneDrop){
-      while(frontSonar.ping_cm() >= 4){
+      //keep driving until the robot is oriented forward
+      while(frontSonar.ping_cm() <= 4){
         drive();
-      }
+      } 
       stopMotors();
       delay(1000);
       onGround = true;
