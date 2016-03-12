@@ -21,7 +21,7 @@ const int motorBVal = 11;
 long distF, distS;
 int numReadings = 5;
 float readings[5];
-int vel = 175; // set the speed here
+int vel = 175; // set the initial speed here
 int distToBase = 0;
 bool onGround = false; 
 bool start = true;
@@ -45,8 +45,8 @@ void setup() {
 void loop() {
      // Wait for robot drop
     if(!start){
-      delay(10000);
-      start = true;
+        delay(10000);
+        start = true;
     }
     if(onGround) {
         stopMotors();
@@ -75,6 +75,22 @@ void checkForGround() {
       stopMotors();
       delay(1000);
       onGround = true;
+        while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
+        while(getMedian(frontSonar) <= 30){
+            drive();
+            delay(10);
+        }  
+        doneDrop = true;
+    }
+    if(start && doneDrop){
+        //reverse if robot goes too far 
+        while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
+          vel = 100;
+          reverse();
+        } 
+        stopMotors();
+        delay(1000);
+        onGround = true;
    }
 }
 
@@ -120,17 +136,17 @@ void search() {
         delay(1000);
     }
     if(turned && !done){
-      vel = 250;
-      while(frontSonar.ping_cm() > 2){
-        drive();  
-      }
-      if(frontSonar.ping_cm() <= 2){
-          done = true;
-      }
+        vel = 250;
+        while(frontSonar.ping_cm() > 2){
+          drive();  
+        }
+        if(frontSonar.ping_cm() <= 2){
+            done = true;
+        }
     }
     if(done){
-      stopMotors();
-      delay(5000);  
+        stopMotors();
+        delay(5000);  
     }
 }
 
