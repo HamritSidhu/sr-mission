@@ -1,12 +1,15 @@
 #include <NewPing.h>
+#include <QuickStats.h>
 
 //The third argument is the distance range within which the sensor reads
 NewPing sideSonar(10, 2, 140);
 NewPing frontSonar(5, 6, 200);
 
+QuickStats stats; 
+
 // Motor A - right motor
 // Motor B - left motor
-// Initialixing motor pins
+// Initializing motor pins
 const int brakePinA = 9;
 const int brakePinB = 8;
 const int motorADir = 12;
@@ -16,7 +19,8 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-//int margin = 0;
+int numReadings = 5;
+float readings[5];
 int vel = 175; // set the speed here
 int distToBase = 0;
 bool onGround = false; 
@@ -55,8 +59,8 @@ void loop() {
 
 void checkForGround() {
     if(start && !doneDrop){
-      while (getAverageReadingF() >= 20 || getAverageReadingF() == 0) { }
-      while(getAverageReadingF() <= 30){
+      while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
+      while(getMedian(frontSonar) <= 30){
           drive();
           delay(10);
       }  
@@ -64,7 +68,7 @@ void checkForGround() {
     }
     if(start && doneDrop){
       //reverse if robot goes too far 
-      while(getAverageReadingF() <= 150 || getAverageReadingF() == 0){
+      while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
         vel = 100;
         reverse();
       } 
@@ -74,14 +78,21 @@ void checkForGround() {
    }
 }
 
-
+//Average Filter
 double getAverageReadingF() {
     double total = 0;
-
     for (int i=0; i<5; i++) {
         total +=  frontSonar.ping_cm();
     }
     return total/5;
+}
+
+//Median Filter
+float getMedian(NewPing sensor) {
+    for (int i=0; i<numReadings; i++) {
+        readings[i] = sensor.ping_cm();
+    }
+    return stats.median(readings, numReadings);   
 }
 
 void search() {
