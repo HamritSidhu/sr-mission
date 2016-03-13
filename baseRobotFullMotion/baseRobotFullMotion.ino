@@ -17,7 +17,7 @@ bool driving = false;
 
 // Speed
 int motorSpeed = 100;
-int pulleySpeed = 20;
+int pulleySpeed = 0;
 
 void setup() {
    //Setup Channel A motor
@@ -36,7 +36,7 @@ void setup() {
   armServo.attach(7);  // attaches the servo on pin 9 to the servo object
   armServo.write(180); // Set arm to 180 position,
   pulleyServo.attach(10);  // attaches the servo on pin 13 to a servo object
-  pulleyServo.write(105); // Stop pulley motor
+  pulleyServo.write(100); // Stop pulley motor
 
 }
 
@@ -55,7 +55,6 @@ void waitForStart() {
   int state = digitalRead(buttonStart);
   if (state == HIGH) {
     startDrive = true;
-    doneDrive = true;
   }
 }
 
@@ -123,9 +122,9 @@ void pulley() {
   stopBoth();
   delay(3000);   
   pulleyServo.write(pulleySpeed); 
-  delay(2000);
-  armServo.write(10);
-  delay(9000);
+  delay(1000);
+  armServo.write(20);
+  delay(12000);
   pulleyServo.write(100);
   donePulley = true; 
 }
