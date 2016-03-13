@@ -1,12 +1,15 @@
 #include <NewPing.h>
+#include <QuickStats.h>
 
 //The third argument is the distance range within which the sensor reads
-NewPing sideSonar(10, 2, 40);
-NewPing frontSonar(5, 6, 40);
+NewPing sideSonar(10, 2, 140);
+NewPing frontSonar(5, 6, 200);
+
+QuickStats stats; 
 
 // Motor A - right motor
 // Motor B - left motor
-// Initialixing motor pins
+// Initializing motor pins
 const int brakePinA = 9;
 const int brakePinB = 8;
 const int motorADir = 12;
@@ -16,11 +19,16 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-int vel = 100; // set the speed here
-bool onGround = false;
+int numReadings = 5;
+float readings[5];
+int vel = 175; // set the initial speed here
+int distToBase = 0;
+bool onGround = false; 
+bool start = true;
+bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
-bool atDestination = false;
+bool done = false;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -35,58 +43,111 @@ void setup() {
 }
 
 void loop() {
-    //if (onGround) {
+     // Wait for robot drop
+    if(!start){
+        delay(10000);
+        start = true;
+    }
+    if(onGround) {
+        stopMotors();
         search();
-    //}
-    //else {
-    //    checkForGround();
-    //}
-}
-
-void search() {
-    if (!doneAlignment && !turned) {
-        doneAlignment = sideDetects();  
     }
-    
-    if (doneAlignment && !turned) {
-        stopMotors();
-        turnLeft();
-        while (!frontDetects()) {
-            delay(1); 
-        }
-        stopMotors();
-        delay(1000);
-        turned = true;  
+    else {
+        checkForGround();
     }
-
-//    keep checking if destination is reached or not
-//    if (turned && !atDestination) {
-//        checkForDestination();  
-//    }
-//    
-//    Once destination is reached, stop robot from moving
-//    if (atDestination) {
-//        stopMotors();
-//        delay(1000)
-//        while (1) { }
-//    }
-      
-    drive();
-    delay(1000);
 }
 
 void checkForGround() {
-    onGround = targetReached();  
+    if(start && !doneDrop){
+      while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
+      while(getMedian(frontSonar) <= 30){
+          drive();
+          delay(10);
+      }  
+      doneDrop = true;
+    }
+    if(start && doneDrop){
+      //reverse if robot goes too far 
+      while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
+        vel = 100;
+        reverse();
+      } 
+      stopMotors();
+      delay(1000);
+      onGround = true;
+        while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
+        while(getMedian(frontSonar) <= 30){
+            drive();
+            delay(10);
+        }  
+        doneDrop = true;
+    }
+    if(start && doneDrop){
+        //reverse if robot goes too far 
+        while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
+          vel = 100;
+          reverse();
+        } 
+        stopMotors();
+        delay(1000);
+        onGround = true;
+   }
 }
 
-void checkForDestination() {
-    atDestination = targetReached();  
+//Average Filter
+double getAverageReadingF() {
+    double total = 0;
+    for (int i=0; i<5; i++) {
+        total +=  frontSonar.ping_cm();
+    }
+    return total/5;
 }
 
-bool targetReached() {
-    //need to adjust this function so it returns true when we hit something
-    distF = frontSonar.ping_cm();
-    return distF == 0;
+//Median Filter
+float getMedian(NewPing sensor) {
+    for (int i=0; i<numReadings; i++) {
+        readings[i] = sensor.ping_cm();
+    }
+    return stats.median(readings, numReadings);   
+}
+
+void search() {
+    vel = 200;
+    if (!doneAlignment && !turned) {
+        if(sideDetects()){
+          doneAlignment = true;
+          distToBase = distS;
+        }
+    }
+    if (!doneAlignment && !turned){
+        drive();  
+    }
+    if(doneAlignment && !turned){
+        stopMotors();
+        delay(1000);
+        turnLeft();
+        delay(200);
+        while(!frontDetects()){
+          turnLeft(); 
+          delay(10);
+        }
+        turned = true;
+        stopMotors();
+        delay(1000);
+    }
+    if(turned && !done){
+        vel = 250;
+        while(frontSonar.ping_cm() > 2){
+          drive();  
+        }
+        if(frontSonar.ping_cm() <= 2){
+            done = true;
+        }
+    }
+    if(done){
+        stopMotors();
+        delay(5000);  
+    }
 }
 
 bool sideDetects() {
@@ -95,8 +156,7 @@ bool sideDetects() {
 }
 
 bool frontDetects() {
-    distF = frontSonar.ping_cm();
-    return distF != 0;  
+    return frontSonar.ping_cm() <= distToBase && frontSonar.ping_cm() != 0; 
 }
 
 void stopMotors(){
@@ -146,5 +206,10 @@ void turnRight() {
   moveRMtr(false);
   //Left motor moves forward
   moveLMtr(true);
+}
+
+void reverse() {
+  moveRMtr(false);
+  moveLMtr(false); 
 }
 
