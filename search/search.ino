@@ -3,7 +3,7 @@
 
 //The third argument is the distance range within which the sensor reads
 NewPing sideSonar(10, 2, 120);
-NewPing frontSonar(5, 6, 250);
+NewPing frontSonar(5, 6, 120);
 
 QuickStats stats; 
 
@@ -18,7 +18,7 @@ const int motorAVal = 3;
 const int motorBVal = 11;
 
 // defines variables
-long distF, distS;
+long distF, distS, wallDistance;
 int numReadings = 20;
 float readings[20];
 int vel = 100; // set the initial speed here
@@ -67,10 +67,9 @@ void checkForGround(){
     stopMotors();
     delay(1000);
     if(distFront() > 50){
-      while(distFront() <= 120 && distFront() != 0){
-        vel = 100;
-        reverse();
-      } 
+      vel = 100;
+      reverse();
+      delay(2000);
       stopMotors();
       delay(1000);
       onGround = true;
@@ -92,28 +91,33 @@ void search() {
     if(doneAlignment && !turned){
         stopMotors();
         delay(1000);
-        vel = 120;
+        vel = 80;
+        reverse();
+        delay(200);
         turnLeft();
-        delay(500);
+        delay(200);
         
         while(!frontDetects()){
           turnLeft(); 
-          delay(10);
+          delay(5);
         }
-        delay(20);
-        
         turned = true;
         stopMotors();
         delay(1000);
     }
     if(turned && !done){
         vel = 250;
-        while(distFront() > 4){
+        
+        while(distFront() > 5){
           drive();  
         }
-        if(distFront() <= 4){
+
+        distF = distFront();
+        if(distF <= 5){
             done = true;
+            //delay(400);
         }
+       
     }
     if(done){
         stopMotors();
@@ -134,8 +138,10 @@ bool sideDetects() {
     return distS != 0;
 }
 bool frontDetects() {
-    return distFront() <= distToBase + margin && distFront() >= distToBase - margin;
+    distF = distFront();
+    return distF <= distToBase + margin && distF >= distToBase - margin;
 }
+
 void stopMotors(){
   digitalWrite(brakePinA, HIGH);
   digitalWrite(brakePinB, HIGH);  
