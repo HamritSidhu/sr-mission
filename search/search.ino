@@ -2,8 +2,8 @@
 #include <QuickStats.h>
 
 //The third argument is the distance range within which the sensor reads
-NewPing sideSonar(10, 2, 140);
-NewPing frontSonar(5, 6, 200);
+NewPing sideSonar(10, 2, 120);
+NewPing frontSonar(5, 6, 250);
 
 QuickStats stats; 
 
@@ -19,16 +19,17 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-int numReadings = 5;
-float readings[5];
-int vel = 175; // set the initial speed here
+int numReadings = 20;
+float readings[20];
+int vel = 100; // set the initial speed here
 int distToBase = 0;
 bool onGround = false; 
-bool start = true;
+bool start = false;
 bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
+int margin = 4;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -45,11 +46,10 @@ void setup() {
 void loop() {
      // Wait for robot drop
     if(!start){
-        delay(10000);
+        delay(8000);
         start = true;
     }
     if(onGround) {
-        stopMotors();
         search();
     }
     else {
@@ -57,58 +57,25 @@ void loop() {
     }
 }
 
-void checkForGround() {
-    if(start && !doneDrop){
-      while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
-      while(getMedian(frontSonar) <= 30){
-          drive();
-          delay(10);
-      }  
-      doneDrop = true;
+void checkForGround(){
+    while(distFront() > 30 || distFront() <= 0){ }
+    while(distFront() < 30){
+      drive();
+      delay(50);
     }
-    if(start && doneDrop){
-      //reverse if robot goes too far 
-      while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
+
+    stopMotors();
+    delay(1000);
+    if(distFront() > 50){
+      while(distFront() <= 120 && distFront() != 0){
         vel = 100;
         reverse();
       } 
       stopMotors();
       delay(1000);
       onGround = true;
-        while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
-        while(getMedian(frontSonar) <= 30){
-            drive();
-            delay(10);
-        }  
-        doneDrop = true;
     }
-    if(start && doneDrop){
-        //reverse if robot goes too far 
-        while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
-          vel = 100;
-          reverse();
-        } 
-        stopMotors();
-        delay(1000);
-        onGround = true;
-   }
-}
 
-//Average Filter
-double getAverageReadingF() {
-    double total = 0;
-    for (int i=0; i<5; i++) {
-        total +=  frontSonar.ping_cm();
-    }
-    return total/5;
-}
-
-//Median Filter
-float getMedian(NewPing sensor) {
-    for (int i=0; i<numReadings; i++) {
-        readings[i] = sensor.ping_cm();
-    }
-    return stats.median(readings, numReadings);   
 }
 
 void search() {
@@ -117,48 +84,58 @@ void search() {
         if(sideDetects()){
           doneAlignment = true;
           distToBase = distS;
+          Serial.println(distToBase);
         }
+        drive();
     }
-    if (!doneAlignment && !turned){
-        drive();  
-    }
+      
     if(doneAlignment && !turned){
         stopMotors();
         delay(1000);
+        vel = 120;
         turnLeft();
-        delay(200);
+        delay(500);
+        
         while(!frontDetects()){
           turnLeft(); 
           delay(10);
         }
+        delay(20);
+        
         turned = true;
         stopMotors();
         delay(1000);
     }
     if(turned && !done){
         vel = 250;
-        while(frontSonar.ping_cm() > 2){
+        while(distFront() > 4){
           drive();  
         }
-        if(frontSonar.ping_cm() <= 2){
+        if(distFront() <= 4){
             done = true;
         }
     }
     if(done){
         stopMotors();
-        delay(5000);  
+        while(1) { } 
     }
 }
 
+int distFront(){
+  return getMedian(frontSonar);  
+}
+
+int distSide(){
+  return getMedian(sideSonar);  
+}
+
 bool sideDetects() {
-    distS = sideSonar.ping_cm();
+    distS = distSide();
     return distS != 0;
 }
-
 bool frontDetects() {
-    return frontSonar.ping_cm() <= distToBase && frontSonar.ping_cm() != 0; 
+    return distFront() <= distToBase + margin && distFront() >= distToBase - margin;
 }
-
 void stopMotors(){
   digitalWrite(brakePinA, HIGH);
   digitalWrite(brakePinB, HIGH);  
@@ -211,5 +188,13 @@ void turnRight() {
 void reverse() {
   moveRMtr(false);
   moveLMtr(false); 
+}
+
+//Median Filter
+float getMedian(NewPing sensor) {
+    for (int i=0; i<numReadings; i++) {
+        readings[i] = sensor.ping_cm();
+    }
+    return stats.median(readings, numReadings);   
 }
 
