@@ -18,7 +18,10 @@ const int motorAVal = 3;
 const int motorBVal = 11;
 
 // defines variables
-long distF, distS, wallDistance;
+long distF, distS;
+unsigned long startTime;
+unsigned long duration;
+
 int numReadings = 20;
 float readings[20];
 int vel = 100; // set the initial speed here
@@ -29,7 +32,8 @@ bool doneDrop = false;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
-int margin = 4;
+bool stopwatch = false;
+int margin = 10;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -45,16 +49,16 @@ void setup() {
 
 void loop() {
      // Wait for robot drop
-    if(!start){
-        delay(8000);
-        start = true;
-    }
-    if(onGround) {
+//    if(!start){
+//        delay(8000);
+//        start = true;
+//    }
+//    if(onGround) {
         search();
-    }
-    else {
-        checkForGround();
-    }
+//    }
+//    else {
+//        checkForGround();
+//    }
 }
 
 void checkForGround(){
@@ -78,11 +82,18 @@ void checkForGround(){
 }
 
 void search() {
-    vel = 200;
+    vel = 100;
+
+//    if (!stopwatch) {
+//        startTime = millis();
+//        stopwatch = true;
+//    }
+//    
     if (!doneAlignment && !turned) {
         if(sideDetects()){
           doneAlignment = true;
           distToBase = distS;
+          //duration = millis() - startTime;
           Serial.println(distToBase);
         }
         drive();
@@ -91,11 +102,16 @@ void search() {
     if(doneAlignment && !turned){
         stopMotors();
         delay(1000);
-        vel = 80;
+        vel = 100;
         reverse();
-        delay(200);
+
+        if (distToBase <= 40) {
+            delay(180);  
+        }
+       
+        
         turnLeft();
-        delay(200);
+        delay(460);
         
         while(!frontDetects()){
           turnLeft(); 
@@ -107,9 +123,11 @@ void search() {
     }
     if(turned && !done){
         vel = 250;
-        
-        while(distFront() > 5){
+
+        distF = distFront();
+        while(distF > 5 || distF == 0){
           drive();  
+          distF = distFront();
         }
 
         distF = distFront();
@@ -126,6 +144,8 @@ void search() {
 }
 
 int distFront(){
+  
+  
   return getMedian(frontSonar);  
 }
 
@@ -139,7 +159,8 @@ bool sideDetects() {
 }
 bool frontDetects() {
     distF = distFront();
-    return distF <= distToBase + margin && distF >= distToBase - margin;
+    return distF <= distToBase + margin && distF >= distToBase - margin && distF != 0;
+
 }
 
 void stopMotors(){
