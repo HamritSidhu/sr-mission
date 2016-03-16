@@ -54,11 +54,13 @@ void loop() {
 //        start = true;
 //    }
 //    if(onGround) {
-        search();
+       search();
 //    }
 //    else {
 //        checkForGround();
 //    }
+
+ 
 }
 
 void checkForGround(){
@@ -127,19 +129,20 @@ void search() {
         vel = 250;
 
         distF = distFront();
-        while(distF > 5 || distF == 0){
+        while(distF > 20 || distF == 0){
           drive();  
           distF = distFront();
         }
 
         distF = distFront();
-        if(distF <= 5){
-            done = true;
-            delay(400);
+        if(distF <= 20){
+            done = true;  
         }
        
     }
     if(done){
+        drive();
+        delay(300);
         stopMotors();
         while(1) { } 
     }
