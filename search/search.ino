@@ -48,18 +48,17 @@ void setup() {
 
 void loop() {
      // Wait for robot drop
-//    if(!start){
-//        delay(12000);
-//        start = true;
-//    }
-//    if(onGround) {
-//       search();
-//    }
-//    else {
-//        checkForGround();
-//    }
+    if(!start){
+        delay(12000);
+        start = true;
+    }
+    if(onGround) {
+       search();
+    }
+    else {
+        checkForGround();
+    }
 
-      drive();
 }
 
 void checkForGround(){
