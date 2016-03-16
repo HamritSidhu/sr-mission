@@ -19,8 +19,6 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-unsigned long startTime;
-unsigned long duration;
 
 int numReadings = 20;
 float readings[20];
@@ -34,6 +32,8 @@ bool turned = false;
 bool done = false;
 bool stopwatch = false;
 int margin = 10;
+int timer = 0;
+
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -84,11 +84,8 @@ void checkForGround(){
 void search() {
     vel = 100;
 
-//    if (!stopwatch) {
-//        startTime = millis();
-//        stopwatch = true;
-//    }
-//    
+   
+    
     if (!doneAlignment && !turned) {
         if(sideDetects()){
           doneAlignment = true;
@@ -103,19 +100,24 @@ void search() {
         stopMotors();
         delay(1000);
         vel = 100;
-        reverse();
+//        reverse();
 
-        if (distToBase <= 40) {
-            delay(180);  
+        if (distToBase >= 50) {
+            margin = 6;
         }
-       
-        
+        else {
+            margin = 10;  
+        }    
+
         turnLeft();
-        delay(460);
-        
-        while(!frontDetects()){
+        delay(400);
+        timer = 400;
+
+        while(!frontDetects() && timer <= 420){
+        //while (timer <= 420) {
           turnLeft(); 
           delay(5);
+          timer += 5;
         }
         turned = true;
         stopMotors();
@@ -133,7 +135,7 @@ void search() {
         distF = distFront();
         if(distF <= 5){
             done = true;
-            //delay(400);
+            delay(400);
         }
        
     }
