@@ -46,7 +46,7 @@ void setup() {
 void loop() {
      // Wait for robot drop
     if(!start) {
-        delay(12000);
+        delay(11500);
         start = true; 
     }
     
@@ -93,7 +93,7 @@ void search() {
     }
       
     if(doneAlignment && !turned){
-        delay(50);
+        //delay(50);
         stopMotors(1000);
         vel = 120;
         if (distToBase >= 50) {
