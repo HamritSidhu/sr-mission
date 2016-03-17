@@ -69,7 +69,7 @@ void checkForGround() {
     distF = distFront();
     if(distF > 50) {
         vel = 120;
-        reverse(2000);
+        reverse(1250);
         stopMotors(1000);
         onGround = true;
     }
