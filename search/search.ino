@@ -45,17 +45,17 @@ void setup() {
 
 void loop() {
      // Wait for robot drop
-//    if(!start) {
-//        delay(12000);
-//        start = true; 
-//    }
-//    
-//    if(onGround) {
+    if(!start) {
+        delay(12000);
+        start = true; 
+    }
+    
+    if(onGround) {
        search();
-//    }
-//    else {
-//        checkForGround();
-//    }
+    }
+    else {
+        checkForGround();
+    }
 }
 
 void checkForGround() {
@@ -83,7 +83,7 @@ void search() {
             distToBase = distS;
         }
         distF = distFront();
-        if (distF <= 25) {
+        if (distF <= 25 && distF != 0) {
             turnNinety();
             stopMotors(500);
             reverse(300);
