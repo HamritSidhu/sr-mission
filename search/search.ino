@@ -2,8 +2,8 @@
 #include <QuickStats.h>
 
 //The third argument is the distance range within which the sensor reads
-NewPing sideSonar(10, 2, 140);
-NewPing frontSonar(5, 6, 200);
+NewPing sideSonar(10, 2, 120);
+NewPing frontSonar(5, 6, 250);
 
 QuickStats stats; 
 
@@ -19,16 +19,17 @@ const int motorBVal = 11;
 
 // defines variables
 long distF, distS;
-int numReadings = 5;
-float readings[5];
-int vel = 175; // set the initial speed here
+unsigned long startTime;
+int numReadings = 20;
+float readings[20];
+int vel = 100; // set the initial speed here
 int distToBase = 0;
 bool onGround = false; 
-bool start = true;
-bool doneDrop = false;
+bool start = false;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
+int margin = 10;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
@@ -44,13 +45,13 @@ void setup() {
 
 void loop() {
      // Wait for robot drop
-    if(!start){
-        delay(10000);
-        start = true;
+    if(!start) {
+        delay(11500);
+        start = true; 
     }
+    
     if(onGround) {
-        stopMotors();
-        search();
+       search();
     }
     else {
         checkForGround();
@@ -58,49 +59,152 @@ void loop() {
 }
 
 void checkForGround() {
-    if(start && !doneDrop){
-      while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
-      while(getMedian(frontSonar) <= 30){
-          drive();
-          delay(10);
-      }  
-      doneDrop = true;
+    while(distFront() > 30 || distFront() <= 0){ }
+    distF = distFront();
+    while(distF < 30) {
+        drive(50);
+        distF = distFront();
     }
-    if(start && doneDrop){
-      //reverse if robot goes too far 
-      while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
-        vel = 100;
-        reverse();
-      } 
-      stopMotors();
-      delay(1000);
-      onGround = true;
-        while (getMedian(frontSonar) >= 20 || getMedian(frontSonar) == 0) { }
-        while(getMedian(frontSonar) <= 30){
-            drive();
-            delay(10);
-        }  
-        doneDrop = true;
-    }
-    if(start && doneDrop){
-        //reverse if robot goes too far 
-        while(getMedian(frontSonar) <= 150 || getMedian(frontSonar) == 0){
-          vel = 100;
-          reverse();
-        } 
-        stopMotors();
-        delay(1000);
+    stopMotors(1000);
+    distF = distFront();
+    if(distF > 50) {
+        vel = 120;
+        reverse(2000);
+        stopMotors(1000);
         onGround = true;
+    }
+}
+
+void search() {
+    vel = 100;
+    if (!doneAlignment && !turned) {
+        if(sideDetects()){
+            doneAlignment = true;
+            distToBase = distS;
+        }
+        distF = distFront();
+        if (distF <= 25 && distF != 0) {
+            turnNinety();
+            stopMotors(500);
+            reverse(300);
+            stopMotors(250);
+        }
+        drive(0);
+    }
+      
+    if(doneAlignment && !turned){
+        //delay(50);
+        stopMotors(1000);
+        vel = 120;
+        if (distToBase >= 50) {
+            margin = 6;
+        }
+        else {
+            margin = 10;  
+        }    
+        turnNinety();
+        turned = true;
+        stopMotors(1000);
+    }
+    
+    if(turned && !done){
+        vel = 250;
+        distF = distFront();
+        startTime = millis();
+        while((distF > 20 || distF == 0) && (millis() - startTime) < 3000){
+            drive(0);  
+            distF = distFront();
+        }
+        done = true;  
+    }
+    
+    if(done){
+        drive(700);
+        stopMotors(0);
+        while(1) { } 
+    }
+}
+
+
+void turnNinety() {
+    turnLeft(375);
+}
+
+int distFront(){
+  return getMedian(frontSonar);
+}
+
+int distSide(){
+  return getMedian(sideSonar);  
+}
+
+bool sideDetects() {
+    distS = distSide();
+    return distS != 0;
+}
+
+bool frontDetects() {
+    distF = distFront();
+    return distF <= distToBase + margin && distF >= distToBase - margin && distF != 0;
+}
+
+void stopMotors(int delayT) {
+  digitalWrite(brakePinA, HIGH);
+  digitalWrite(brakePinB, HIGH); 
+  if(delayT != 0 ){
+      delay(delayT);
+  }
+}
+
+void moveRMtr(bool forward) {
+  digitalWrite(brakePinA, LOW);   //Disengage the Brake for Channel A
+  if (forward){
+    digitalWrite(motorADir, HIGH); 
+  }
+  else{
+    digitalWrite(motorADir, LOW);  
+  }
+  analogWrite(motorAVal, vel);    //Spins the motor on Channel A at half speed
+}
+
+void moveLMtr(bool forward){
+  digitalWrite(brakePinB, LOW);   //Disengage the Brake for Channel A
+  if (forward){
+    digitalWrite(motorBDir, HIGH); 
+  }
+  else{
+    digitalWrite(motorBDir, LOW);  
+  }
+  analogWrite(motorBVal, vel);    //Spins the motor on Channel A at half speed
+}
+
+void drive(int delayT) {
+   //Motor A forward
+   moveRMtr(true);
+  
+  //Motor B forward 
+   moveLMtr(true);
+   if(delayT != 0 ){
+      delay(delayT);
    }
 }
 
-//Average Filter
-double getAverageReadingF() {
-    double total = 0;
-    for (int i=0; i<5; i++) {
-        total +=  frontSonar.ping_cm();
-    }
-    return total/5;
+void turnLeft(int delayT) {
+  // Left motor moves backward
+  moveLMtr(false);
+  // Right motor moves forward
+  moveRMtr(true);
+  if(delayT != 0 ){
+      delay(delayT);
+  }
+}
+
+void reverse(int delayT) {
+  moveRMtr(false);
+  moveLMtr(false); 
+  if(delayT != 0 ){
+      delay(delayT);
+  }
 }
 
 //Median Filter
@@ -109,107 +213,5 @@ float getMedian(NewPing sensor) {
         readings[i] = sensor.ping_cm();
     }
     return stats.median(readings, numReadings);   
-}
-
-void search() {
-    vel = 200;
-    if (!doneAlignment && !turned) {
-        if(sideDetects()){
-          doneAlignment = true;
-          distToBase = distS;
-        }
-    }
-    if (!doneAlignment && !turned){
-        drive();  
-    }
-    if(doneAlignment && !turned){
-        stopMotors();
-        delay(1000);
-        turnLeft();
-        delay(200);
-        while(!frontDetects()){
-          turnLeft(); 
-          delay(10);
-        }
-        turned = true;
-        stopMotors();
-        delay(1000);
-    }
-    if(turned && !done){
-        vel = 250;
-        while(frontSonar.ping_cm() > 2){
-          drive();  
-        }
-        if(frontSonar.ping_cm() <= 2){
-            done = true;
-        }
-    }
-    if(done){
-        stopMotors();
-        delay(5000);  
-    }
-}
-
-bool sideDetects() {
-    distS = sideSonar.ping_cm();
-    return distS != 0;
-}
-
-bool frontDetects() {
-    return frontSonar.ping_cm() <= distToBase && frontSonar.ping_cm() != 0; 
-}
-
-void stopMotors(){
-  digitalWrite(brakePinA, HIGH);
-  digitalWrite(brakePinB, HIGH);  
-}
-
-void moveRMtr(bool forward){
-  if (forward){
-    digitalWrite(motorADir, HIGH); 
-  }
-  else{
-    digitalWrite(motorADir, LOW);  
-  }
-  digitalWrite(brakePinA, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorAVal, vel);    //Spins the motor on Channel A at half speed
-}
-
-void moveLMtr(bool forward){
-  if (forward){
-    digitalWrite(motorBDir, HIGH); 
-  }
-  else{
-    digitalWrite(motorBDir, LOW);  
-  }
-  digitalWrite(brakePinB, LOW);   //Disengage the Brake for Channel A
-  analogWrite(motorBVal, vel);    //Spins the motor on Channel A at half speed
-}
-
-void drive() {
-   //Motor A forward
-   moveRMtr(true);
-  
-  //Motor B forward 
-   moveLMtr(true);
-}
-
-void turnLeft() {
-  // Left motor moves backward
-  moveLMtr(false);
-  // Right motor moves forward
-  moveRMtr(true);
-}
-
-void turnRight() {
-  //Right motor moves backward
-  moveRMtr(false);
-  //Left motor moves forward
-  moveLMtr(true);
-}
-
-void reverse() {
-  moveRMtr(false);
-  moveLMtr(false); 
 }
 
