@@ -3,7 +3,7 @@
 
 //The third argument is the distance range within which the sensor reads
 NewPing sideSonar(10, 2, 120);
-NewPing frontSonar(5, 6, 120);
+NewPing frontSonar(5, 6, 250);
 
 QuickStats stats; 
 
@@ -56,32 +56,30 @@ void loop() {
     else {
         checkForGround();
     }
-
 }
 
 void checkForGround() {
+  
+    while(distFront() > 30 || distFront() <= 0){ }
     distF = distFront();
-    while(distF > 30 || distF <= 0){
+    while(distF < 30){
+        drive();
+        delay(50);
         distF = distFront();
     }
 
-    while(distF == 0 || distF > 15) {
-        distF = distFront();
+    stopMotors();
+    delay(1000);
+
+    distF = distFront();
+    if(distF > 50) {
+        vel = 120;
+        reverse();
+        delay(2000);
+        stopMotors();
+        delay(1000);
+        onGround = true;
     }
-    
-    drive();
-    delay(4000);
-    
-    stopMotors();
-    delay(1000);
-    
-    reverse();    
-    delay(1500);
-    
-    stopMotors();
-    delay(1000);
-    
-    onGround = true; 
 }
 
 void search() {
@@ -89,9 +87,17 @@ void search() {
 
     if (!doneAlignment && !turned) {
         if(sideDetects()){
-          doneAlignment = true;
-          distToBase = distS;
+            doneAlignment = true;
+            distToBase = distS;
         }
+
+        distF = distFront();
+        if (distF <= 10) {
+            turnNinety();
+            stopMotors();
+            delay(500);
+        }
+        
         drive();
     }
       
@@ -99,21 +105,14 @@ void search() {
         delay(50);
         stopMotors();
         delay(1000);
-        vel = 100;
+        vel = 120;
         if (distToBase >= 50) {
             margin = 6;
         }
         else {
             margin = 10;  
         }    
-        startTime = millis();
-        turnLeft();
-        delay(310);
-
-        while(!frontDetects() && millis() - startTime <= 525) {
-          turnLeft(); 
-          delay(5);
-        }
+        turnNinety();
         turned = true;
         stopMotors();
         delay(1000);
@@ -124,8 +123,8 @@ void search() {
         distF = distFront();
         startTime = millis();
         while((distF > 20 || distF == 0) && (millis() - startTime) < 3000){
-          drive();  
-          distF = distFront();
+            drive();  
+            distF = distFront();
         }
         done = true;  
     }
@@ -137,6 +136,14 @@ void search() {
         while(1) { } 
     }
 }
+
+
+void turnNinety() {
+    startTime = millis();
+    turnLeft();
+    delay(375);  
+}
+
 
 int distFront(){
   return getMedian(frontSonar);
