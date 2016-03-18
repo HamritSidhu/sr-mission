@@ -25,7 +25,7 @@ float readings[20];
 int vel = 100; // set the initial speed here
 int distToBase = 0;
 bool onGround = false; 
-bool start = false;
+bool start = true;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
@@ -59,16 +59,21 @@ void loop() {
 }
 
 void checkForGround() {
+    // wait until 30 cm away from ground 
     while(distFront() > 30 || distFront() <= 0){ }
     distF = distFront();
+
+    // move wheels forward until ground is hit
     while(distF < 30) {
         drive(50);
         distF = distFront();
     }
     stopMotors(1000);
     distF = distFront();
+    
     if(distF > 50) {
         vel = 120;
+        //reverse motors to align wheels against wall and straight forward
         reverse(1250);
         stopMotors(1000);
         onGround = true;
@@ -77,10 +82,11 @@ void checkForGround() {
 
 void search() {
     vel = 100;
+
+    //check for side sensor alignment with destination
     if (!doneAlignment && !turned) {
-        if(sideDetects()){
+        if(sideDetects()) {
             doneAlignment = true;
-            distToBase = distS;
         }
         distF = distFront();
         if (distF <= 25 && distF != 0) {
@@ -91,22 +97,18 @@ void search() {
         }
         drive(0);
     }
-      
+
+    // rotate search robot towards the base
     if(doneAlignment && !turned){
-        //delay(50);
         stopMotors(1000);
         vel = 120;
-        if (distToBase >= 50) {
-            margin = 6;
-        }
-        else {
-            margin = 10;  
-        }    
+  
         turnNinety();
         turned = true;
         stopMotors(1000);
     }
-    
+
+    // move search robot forward until it hits the base or a maximum of 3 seconds
     if(turned && !done){
         vel = 250;
         distF = distFront();
@@ -117,7 +119,8 @@ void search() {
         }
         done = true;  
     }
-    
+
+    // once at destination, stop
     if(done){
         drive(700);
         stopMotors(0);
@@ -141,11 +144,6 @@ int distSide(){
 bool sideDetects() {
     distS = distSide();
     return distS != 0;
-}
-
-bool frontDetects() {
-    distF = distFront();
-    return distF <= distToBase + margin && distF >= distToBase - margin && distF != 0;
 }
 
 void stopMotors(int delayT) {
