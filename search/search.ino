@@ -25,7 +25,7 @@ float readings[20];
 int vel = 100; // set the initial speed here
 int distToBase = 0;
 bool onGround = false; 
-bool start = true;
+bool start = false;
 bool doneAlignment = false;
 bool turned = false;
 bool done = false;
