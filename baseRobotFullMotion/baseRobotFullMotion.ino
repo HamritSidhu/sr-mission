@@ -26,7 +26,7 @@ bool offBoard = false;
 
 
 // Speed
-int motorSpeed = 40;
+int motorSpeed = 60;
 int pulleySpeed = 0;
 
 void setup() {
@@ -44,8 +44,8 @@ void setup() {
   pinMode(buttonStart,  INPUT);
 
   armServo.attach(33);
-  armServo.write(140); // Set arm to 180 position,
-  pulleyServo.attach(31);
+  armServo.write(120); // Set arm to 180 position,
+  pulleyServo.attach(24);
   pulleyServo.write(100); // Stop pulley motor
 
 }
@@ -112,16 +112,16 @@ void drive() {
   {
 //    stopBoth();
     doneDrive = true;
-//    delay(500);
+//    delay(300);
   }
   else {
     driveBoth();
     if (!offBoard) {
-      delay(3600);
+      delay(500);
       offBoard = true;
     }
     // acceleration
-    if (motorSpeed < 200) {
+    if (motorSpeed < 240) {
       motorSpeed += 10;
       delay(100);
     }
@@ -137,9 +137,9 @@ void pulley() {
   delay(500);
   // Move forward by a bit
   driveBoth();
-  delay(1000);
+  delay(600);
   stopBoth();
-  delay(1000); 
+//  delay(1000); 
   // Drop search robot  
   pulleyServo.write(pulleySpeed); 
   delay(1000);
